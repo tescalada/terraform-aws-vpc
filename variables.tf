@@ -113,6 +113,11 @@ variable "map_public_ip_on_launch" {
   default     = true
 }
 
+variable "public_database_subnets" {
+  description = "Should be false if you do not want to auto-assign public IP on launch"
+  default     = false
+}
+
 variable "enable_vpn_gateway" {
   description = "Should be true if you want to create a new VPN Gateway resource and attach it to the VPC"
   default     = false

@@ -146,6 +146,9 @@ resource "aws_subnet" "database" {
   cidr_block        = "${var.database_subnets[count.index]}"
   availability_zone = "${element(var.azs, count.index)}"
 
+  # added to give the database subnet access to the public internet
+  map_public_ip_on_launch = "${var.public_database_subnets}"
+
   tags = "${merge(map("Name", format("%s-db-%s", var.name, element(var.azs, count.index))), var.database_subnet_tags, var.tags)}"
 }
 
@@ -347,10 +350,18 @@ resource "aws_route_table_association" "private" {
 }
 
 resource "aws_route_table_association" "database" {
-  count = "${var.create_vpc && length(var.database_subnets) > 0 ? length(var.database_subnets) : 0}"
+  count = "${var.create_vpc && !var.public_database_subnets && length(var.database_subnets) > 0 ? length(var.database_subnets) : 0}"
 
   subnet_id      = "${element(aws_subnet.database.*.id, count.index)}"
   route_table_id = "${element(aws_route_table.private.*.id, (var.single_nat_gateway ? 0 : count.index))}"
+}
+
+# added to give the database subnet access to the public internet
+resource "aws_route_table_association" "database-public" {
+  count = "${var.create_vpc && var.public_database_subnets && length(var.database_subnets) > 0 ? length(var.database_subnets) : 0}"
+
+  subnet_id      = "${element(aws_subnet.database.*.id, count.index)}"
+  route_table_id = "${aws_route_table.public.id}"
 }
 
 resource "aws_route_table_association" "redshift" {
